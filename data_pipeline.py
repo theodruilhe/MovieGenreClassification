@@ -1,14 +1,18 @@
 # data/train_data.txt
 # data/test_data.txt
 
+import math
+import multiprocessing
 import os
 import string
+from collections import Counter
 
 import numpy as np
 import pandas as pd
 import spacy
 from gensim.models import Word2Vec
-from scipy.sparse import csr_matrix
+from joblib import Parallel, delayed
+from scipy.sparse import csr_matrix, lil_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 
@@ -62,131 +66,89 @@ def first_last_token(df, col="description_t"):
 def create_word_count_dataset(
     df, col="description_t", max_features=None, chunk_size=1000
 ):
-    # Create a CountVectorizer with optional max_features
     vectorizer = CountVectorizer(max_features=max_features)
 
-    # Process the data in chunks
     chunks = [df[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
 
-    # Initialize an empty DataFrame to store the results
     result_df = pd.DataFrame(index=df.index)
 
-    for i, chunk in enumerate(chunks):
-        print(f"Processing chunk {i + 1}/{len(chunks)}...")
+    with tqdm(total=len(chunks)) as pbar:
+        for i, chunk in enumerate(chunks):
+            pbar.set_description(f"Processing chunk {i + 1}/{len(chunks)}...")
 
-        # Fit the vectorizer on the current chunk
-        word_counts_sparse = vectorizer.fit_transform(
-            chunk[col].apply(lambda x: " ".join(x))
-        )
+            word_counts_sparse = vectorizer.fit_transform(
+                chunk[col].apply(lambda x: " ".join(x))
+            )
 
-        # Convert the sparse matrix to a DataFrame
-        word_count_df = pd.DataFrame(
-            word_counts_sparse.toarray(),
-            index=chunk.index,
-            columns=vectorizer.get_feature_names_out(),
-        )
+            word_count_df = pd.DataFrame(
+                word_counts_sparse.toarray(),
+                index=chunk.index,
+                columns=vectorizer.get_feature_names_out(),
+            )
 
-        # Concatenate the results with the previous chunks
-        result_df = pd.concat([result_df, word_count_df], axis=1)
+            result_df = pd.concat([result_df, word_count_df], axis=1)
+            pbar.update(1)
 
     return pd.concat([df, result_df], axis=1)
 
 
-if __name__ == "__main__":
-    # Load data
+def main(filename, save_file=True):
     print("Loading data...")
+    train_data = load_data(filename)
 
-    if not os.path.exists("data/train_data_embed.pkl"):
-        train_data = load_data("data/train_data.txt")
+    print("Loading spacy...")
+    nlp = spacy.load("en_core_web_sm")
+    tqdm.pandas()
 
-        if not os.path.exists("data/train_data_wc.pkl"):
-            if not os.path.exists("data/train_data_tok.pkl"):
-                # Load spacy
-                print("Loading spacy...")
-                nlp = spacy.load("en_core_web_sm")
-                tqdm.pandas()
+    print("Tokenizing train_data...")
+    train_data = tokenize_col(train_data, ["description"], nlp, remove_stop=True)
+    first_last_token(train_data)
 
-                # Tokenize train_data if not already tokenized
-                print("Tokenizing train_data...")
-                train_data = tokenize_col(
-                    train_data, ["description"], nlp, remove_stop=True
-                )
-                first_last_token(train_data)
-                print("Saving tokenized train_data...")
-                train_data.to_pickle("data/train_data_tok.pkl")
-            else:
-                train_data = pd.read_pickle("data/train_data_tok.pkl")
+    print("Embedding from tokens...")
 
-            # Create word count dataset in chunks for the sample data
-            max_features = 200000  # Adjust as needed
-            chunk_size = 1000  # Adjust based on available memory
+    unique_tokens = train_data.description_t.explode().unique()
+    print("Number of unique tokens: ", len(unique_tokens))
 
-            print("Creating word count dataset for the sample data...")
-            train_data = create_word_count_dataset(
-                train_data, max_features=max_features, chunk_size=chunk_size
-            )
-
-            # Save the word count dataset to a CSV file
-            print("Saving word count dataset...")
-            train_data.to_pickle("data/train_data_wc.pkl")
-        else:
-            train_data = pd.read_pickle("data/train_data_wc.pkl")
-
-        # embedding from description tokens
-        print("Embedding from tokens...")
-
-        unique_tokens = train_data.description_t.explode().unique()
-        print("Number of unique tokens: ", len(unique_tokens))
-
-        if not os.path.exists("data/description_embedding.model"):
-            model = Word2Vec(
-                train_data.description_t,
-                vector_size=100,
-                window=5,
-                min_count=1,
-                sg=0,
-                epochs=30,
-                workers=4,
-            )
-            model.save("data/description_embedding.model")
-            print("Word2Vec model saved")
-        else:
-            model = Word2Vec.load("data/description_embedding.model")
-            print("Word2Vec model loaded")
-
-        print("Adding embeddings to dataframe...")
-        unique_descriptions = set(
-            [item for sublist in train_data.description_t for item in sublist]
+    if not os.path.exists("data/description_embedding.model"):
+        model = Word2Vec(
+            train_data.description_t,
+            vector_size=100,
+            window=5,
+            min_count=1,
+            sg=0,
+            epochs=30,
+            workers=4,
         )
-        missing_keys = list(set(unique_descriptions) - set(model.wv.index_to_key))
-        print(f"Missing keys ({len(missing_keys)})")
-        train_data.loc[:, "embedding"] = train_data.description_t.progress_apply(
-            lambda x: np.nanmean(
-                [model.wv[word] for word in set(x) & set(model.wv.index_to_key)], axis=0
-            )
-        )
-        print("Saving data...")
-        train_data.to_pickle("data/train_data_embed.pkl")
+        model.save("data/description_embedding.model")
+        print("Word2Vec model saved")
     else:
-        train_data = pd.read_pickle("data/train_data_embed.pkl")
-        print("Data loaded")
         model = Word2Vec.load("data/description_embedding.model")
         print("Word2Vec model loaded")
 
-    """
-    # PCA
-    all_desc_vectors = []
-    for desc in train_data.description_t:
-        vec = np.stack([model.wv[word] for word in desc]).mean(axis=0)
-        all_desc_vectors.append(vec)
+    print("Adding embeddings to dataframe...")
+    unique_descriptions = set(
+        [item for sublist in train_data.description_t for item in sublist]
+    )
+    missing_keys = list(set(unique_descriptions) - set(model.wv.index_to_key))
+    print(f"Missing keys ({len(missing_keys)})")
+    train_data.loc[:, "embedding"] = train_data.description_t.progress_apply(
+        lambda x: np.nanmean(
+            [model.wv[word] for word in set(x) & set(model.wv.index_to_key)], axis=0
+        )
+    )
 
-    X = np.array(all_desc_vectors)
+    for i in range(100):
+        train_data.loc[:, f"embedding_{i}"] = train_data.embedding.apply(
+            lambda x: x[i] if not np.isnan(x[i]) else 0
+        )
 
-    scaler = StandardScaler()
-    X_normalized = scaler.fit_transform(X)
+    if save_file:
+        print("Saving data...")
+        output_filename = filename.split(".")[0] + "_embed.csv"
+        train_data.to_csv(output_filename, index=False)
 
-    pca = PCA(n_components=6)
-    X_reduced = pca.fit_transform(X_normalized)
+    return train_data
 
-    print(X_reduced.shape)
-    """
+
+if __name__ == "__main__":
+    train_data = main("data/train_data.txt", save_file=True)
