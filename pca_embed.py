@@ -19,14 +19,17 @@ def add_pca_features(df, n_components=39):
         ],
         axis=1,
     )
+    print("Embeddings shape:", embeddings.shape)
     labels = df["genre"]
-
+    print("Labels shape:", labels.shape)
     scaler = StandardScaler()
     scaler.fit(embeddings)
     embeddings = scaler.transform(embeddings)
+    print("Embeddings shape after scaling:", embeddings.shape)
 
     pca = PCA(n_components=n_components)
     principalComponents = pca.fit_transform(embeddings)
+    print("Principal components shape:", principalComponents.shape)
 
     print(
         "Cumulative explained variance:", np.cumsum(pca.explained_variance_ratio_)[-1]
@@ -36,8 +39,10 @@ def add_pca_features(df, n_components=39):
         data=principalComponents,
         columns=[f"pc_{i}" for i in range(1, n_components + 1)],
     )
+    print("Principal components df shape:", principalDf.shape)
+    labels = labels.reset_index(drop=True)
     finalDf = pd.concat([principalDf, labels], axis=1)
-
+    print("Final df shape:", finalDf.shape)
     return finalDf
 
 
