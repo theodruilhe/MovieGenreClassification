@@ -20,7 +20,6 @@ def add_pca_features(df, n_components=39):
         axis=1,
     )
     labels = df["genre"]
-
     scaler = StandardScaler()
     scaler.fit(embeddings)
     embeddings = scaler.transform(embeddings)
@@ -36,8 +35,8 @@ def add_pca_features(df, n_components=39):
         data=principalComponents,
         columns=[f"pc_{i}" for i in range(1, n_components + 1)],
     )
+    labels = labels.reset_index(drop=True)
     finalDf = pd.concat([principalDf, labels], axis=1)
-
     return finalDf
 
 
