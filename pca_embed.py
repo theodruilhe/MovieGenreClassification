@@ -4,8 +4,10 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+from utils import filter_data_genre
 
-def add_pca_features(df, n_components=39):
+
+def add_pca_features(df, n_components=37):
     embeddings = df.drop(
         [
             "label",
@@ -72,14 +74,9 @@ def plot_pca(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/train_data_embed.csv")
-    genre_freqs = df.genre.value_counts()
+    df = pd.read_csv("data/full_data_embed.csv")
+    filtered_df = filter_data_genre(df)
 
-    minimum_threshold = 1000
-    selected_genres = genre_freqs >= minimum_threshold
-
-    filtered_df = df.loc[df.genre.isin(selected_genres[selected_genres].index)]
-
-    pca_df = add_pca_features(filtered_df)
+    pca_df = add_pca_features(filtered_df, n_components=37)
 
     plot_pca(pca_df)
