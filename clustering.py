@@ -35,15 +35,26 @@ def create_clustered_df(pca_df, n_clusters=8):
 
 
 def visualize_clusters(df):
-    plt.scatter(df["pc_1"], df["pc_2"], c=df["cluster"], s=8, cmap="viridis")
-    plt.title("Clusters")
-    plt.xlabel("PCA1")
-    plt.ylabel("PCA2")
+    """
+    Plot the data colored by cluster on the first two principal components, with a
+    legend.
+    """
+    plt.figure(figsize=(10, 10))
+    colors = ["red", "green", "blue", "purple", "orange", "yellow", "pink", "black"]
+    for color, cluster in zip(colors, df["cluster"].unique()):
+        plt.scatter(
+            df[df["cluster"] == cluster]["pc_1"],
+            df[df["cluster"] == cluster]["pc_2"],
+            label=cluster,
+            s=8,
+            c=color,
+        )
+    plt.legend()
     plt.show()
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/train_data_embed.csv")
+    df = pd.read_csv("data/full_data_embed.csv")
 
     filtered_df = filter_data_genre(df, minimum_threshold=1000)
 
