@@ -76,7 +76,9 @@ def cluster_analysis(df):
 
     percentage_table = pivot_table.div(pivot_table.sum(axis=1), axis=0) * 100
 
-    print(round(percentage_table,1))
+    latex_output = percentage_table.to_latex(float_format="{:0.2f}".format)
+
+    print(latex_output)
 
     fig, axes = plt.subplots(2, 4, figsize=(15, 8))
     fig.suptitle("Movie genre distribution in each cluster", fontsize=16)
