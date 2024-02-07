@@ -29,6 +29,19 @@ def load_data(text_file):
     return pd.DataFrame(data, columns=["label", "title", "genre", "description"])
 
 
+def merge_train_test(train_data_file, test_data_file, open_file):
+    """
+    Create a single dataframe from train and test data in the same format of the
+    original data
+    """
+    train_data = load_data(train_data_file)
+    test_data = load_data(test_data_file)
+    merged = pd.concat([train_data, test_data], axis=0)
+    with open(open_file, "w") as f:
+        for i, row in tqdm(merged.iterrows()):
+            f.write(":::".join(row) + "\n")
+
+
 def tokenizer_lang(text, nlp, remove_stop=False):
     doc = nlp.tokenizer(text)
 
@@ -100,7 +113,7 @@ def main(filename, save_file=True):
     nlp = spacy.load("en_core_web_sm")
     tqdm.pandas()
 
-    print("Tokenizing train_data...")
+    print("Tokenizing data...")
     train_data = tokenize_col(train_data, ["description"], nlp, remove_stop=True)
     first_last_token(train_data)
 
@@ -108,11 +121,12 @@ def main(filename, save_file=True):
 
     unique_tokens = train_data.description_t.explode().unique()
     print("Number of unique tokens: ", len(unique_tokens))
+    vector_size = 100
 
     if not os.path.exists("data/description_embedding.model"):
         model = Word2Vec(
             train_data.description_t,
-            vector_size=100,
+            vector_size=vector_size,
             window=5,
             min_count=1,
             sg=0,
@@ -130,14 +144,14 @@ def main(filename, save_file=True):
         [item for sublist in train_data.description_t for item in sublist]
     )
     missing_keys = list(set(unique_descriptions) - set(model.wv.index_to_key))
-    print(f"Missing keys ({len(missing_keys)})")
+    print(f"Missing keys: {len(missing_keys)}")
     train_data.loc[:, "embedding"] = train_data.description_t.progress_apply(
         lambda x: np.nanmean(
             [model.wv[word] for word in set(x) & set(model.wv.index_to_key)], axis=0
         )
     )
 
-    for i in range(100):
+    for i in range(vector_size):
         train_data.loc[:, f"embedding_{i}"] = train_data.embedding.apply(
             lambda x: x[i] if not np.isnan(x[i]) else 0
         )
@@ -151,4 +165,8 @@ def main(filename, save_file=True):
 
 
 if __name__ == "__main__":
-    train_data = main("data/train_data.txt", save_file=True)
+    print("Merging train and test data...")
+    merge_train_test(
+        "data/train_data.txt", "data/test_data_solution.txt", "data/full_data.txt"
+    )
+    main("data/full_data.txt")
