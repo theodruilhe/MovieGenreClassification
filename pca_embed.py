@@ -39,7 +39,7 @@ def add_pca_features(df, n_components=37):
     )
     labels = labels.reset_index(drop=True)
     finalDf = pd.concat([principalDf, labels], axis=1)
-    return finalDf
+    return finalDf, pca
 
 
 def plot_pca(df):
