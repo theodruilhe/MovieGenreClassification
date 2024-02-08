@@ -73,6 +73,19 @@ def plot_pca(df):
     plt.show()
 
 
+def scree_plot(pca):
+    # plot the explained variance
+    plt.figure(figsize=(8, 8))
+    plt.plot(
+        range(1, len(pca.explained_variance_ratio_) + 1),
+        np.cumsum(pca.explained_variance_ratio_),
+    )
+    plt.xlabel("Number of Principal Components")
+    plt.ylabel("Cumulative Explained Variance")
+    plt.title("Scree Plot")
+    plt.show()
+
+
 if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
 
