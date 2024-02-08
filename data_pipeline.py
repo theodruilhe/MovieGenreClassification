@@ -42,6 +42,48 @@ def merge_train_test(train_data_file, test_data_file, open_file):
             f.write(":::".join(row) + "\n")
 
 
+def regroup_genres(data):
+    """
+    Create new genres by grouping the existing ones
+    """
+    new_genres = {
+        "thriller": "thriller/horror",
+        "horror": "thriller/horror",
+        "war": "action",
+        "action": "action",
+        "adventure": "action",
+        "sci-fi": "action",
+        "western": "action",
+        "drama": "drama",
+        "romance": "drama",
+        "comedy": "comedy",
+        "family": "family",
+        "animation": "family",
+        "music": "music",
+        "musical": "music",
+        "documentary": "documentary",
+        "biography": "documentary",
+        "history": "documentary",
+        "game-show": "live",
+        "sport": "live",
+        "reality-tv": "live",
+        "news": "live",
+        "talk-show": "live",
+        "mystery": "police",
+        "fantasy": "police",
+        "crime": "police",
+        "adult": "adult",
+        "comedy": "comedy",
+        "short": "short",
+    }
+    data["genre"] = data["genre"].str.strip()
+
+    data["genre"] = data["genre"].map(new_genres)
+    data = data[data["genre"] != "adult"]
+
+    return data
+
+
 def tokenizer_lang(text, nlp, remove_stop=False):
     doc = nlp.tokenizer(text)
 
@@ -113,6 +155,9 @@ def main(filename, save_file=True):
     nlp = spacy.load("en_core_web_sm")
     tqdm.pandas()
 
+    print("Regrouping genres...")
+    train_data = regroup_genres(train_data)
+
     print("Tokenizing data...")
     train_data = tokenize_col(train_data, ["description"], nlp, remove_stop=True)
     first_last_token(train_data)
@@ -163,29 +208,9 @@ def main(filename, save_file=True):
     return train_data
 
 
-def inference_pipeline(text):
-    nlp = spacy.load("en_core_web_sm")
-    tqdm.pandas()
-
-    data = [text]
-    df = pd.DataFrame(data, columns=["description"])
-
-    data = tokenize_col(df, ["description"], nlp, remove_stop=True)
-    first_last_token(data)
-
-    unique_tokens = data.description_t.explode().unique()
-
-    model = Word2Vec.load("data/description_embedding.model")
-    embeddings = model.wv[data.description_t[0]]
-    mean_embedding = np.nanmean(embeddings, axis=0)
-    return mean_embedding
-
-
 if __name__ == "__main__":
     print("Merging train and test data...")
     merge_train_test(
         "data/train_data.txt", "data/test_data_solution.txt", "data/full_data.txt"
     )
     main("data/full_data.txt")
-
-    print(inference_pipeline("I love you baby"))

@@ -56,9 +56,7 @@ def visualize_clusters(df):
 if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
 
-    filtered_df = filter_data_genre(df, minimum_threshold=1000)
-
-    pca_df = add_pca_features(filtered_df)
+    pca_df, _ = add_pca_features(df)
 
     full_df = create_clustered_df(pca_df, n_clusters=8)
 
