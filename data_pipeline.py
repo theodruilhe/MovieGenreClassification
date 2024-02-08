@@ -162,22 +162,24 @@ def main(filename, save_file=True):
 
     return train_data
 
+
 def inference_pipeline(text):
     nlp = spacy.load("en_core_web_sm")
     tqdm.pandas()
-    
+
     data = [text]
-    df = pd.DataFrame(data, columns=['description'])
+    df = pd.DataFrame(data, columns=["description"])
 
     data = tokenize_col(df, ["description"], nlp, remove_stop=True)
     first_last_token(data)
 
     unique_tokens = data.description_t.explode().unique()
-    
+
     model = Word2Vec.load("data/description_embedding.model")
     embeddings = model.wv[data.description_t[0]]
     mean_embedding = np.nanmean(embeddings, axis=0)
     return mean_embedding
+
 
 if __name__ == "__main__":
     print("Merging train and test data...")
