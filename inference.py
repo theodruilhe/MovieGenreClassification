@@ -37,9 +37,8 @@ def inference_pipeline_da(text, nlp, pca_param, lda_model, w2v_model):
 def train_all():
     nlp = spacy.load("en_core_web_sm")
     df = pd.read_csv("data/full_data_embed.csv")
-    filtered_df = filter_data_genre(df)
 
-    pca_df, pca_param = add_pca_features(filtered_df, n_components=37)
+    pca_df, pca_param = add_pca_features(df, n_components=37)
 
     lda_model = discriminant_analysis_pca(pca_df)
 
