@@ -52,6 +52,33 @@ def visualize_clusters(df):
     plt.legend()
     plt.show()
 
+def cluster_analysis(pca_df):
+
+    genre_cluster_distribution = pca_df.groupby(['cluster', 'genre']).size().reset_index(name='count')
+    
+    pivot_table = pd.pivot_table(genre_cluster_distribution, values='count', index='cluster', columns='genre', fill_value=0)
+
+    percentage_table = pivot_table.div(pivot_table.sum(axis=1), axis=0) * 100
+
+    latex_output = percentage_table.to_latex(float_format="{:0.2f}".format)
+
+    print(latex_output)
+
+    fig, axes = plt.subplots(2, 4, figsize=(15, 8))
+    fig.suptitle("Movie genre distribution in each cluster", fontsize=16)
+
+
+    plt.subplots_adjust(wspace=0.5)
+
+    for i, ax in enumerate(axes.flatten()):
+
+        cluster_data = genre_cluster_distribution[genre_cluster_distribution['cluster'] == i]
+        
+        ax.pie(cluster_data['count'], labels=cluster_data['genre'], autopct='%1.1f%%', startangle=90)
+        ax.set_title(f"Cluster {i}")
+
+    plt.show()
+
 
 if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
@@ -61,3 +88,5 @@ if __name__ == "__main__":
     full_df = create_clustered_df(pca_df, n_clusters=8)
 
     visualize_clusters(full_df)
+
+    cluster_analysis(full_df)
