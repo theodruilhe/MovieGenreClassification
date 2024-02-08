@@ -72,8 +72,7 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
 if __name__ == "__main__":
     df = pd.read_csv("data/train_data_embed.csv")
 
-    filtered_df = filter_data_genre(df, minimum_threshold=1000)
-    pca_df = add_pca_features(filtered_df, n_components=37)
+    pca_df, _ = add_pca_features(df, n_components=37)
 
     # discriminant_analysis(filtered_df)
     lda = discriminant_analysis_pca(pca_df)
