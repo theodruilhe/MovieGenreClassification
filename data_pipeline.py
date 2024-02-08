@@ -118,7 +118,6 @@ def main(filename, save_file=True):
     first_last_token(train_data)
 
     print("Embedding from tokens...")
-
     unique_tokens = train_data.description_t.explode().unique()
     print("Number of unique tokens: ", len(unique_tokens))
     vector_size = 100
@@ -163,6 +162,22 @@ def main(filename, save_file=True):
 
     return train_data
 
+def inference_pipeline(text):
+    nlp = spacy.load("en_core_web_sm")
+    tqdm.pandas()
+    
+    data = [text]
+    df = pd.DataFrame(data, columns=['description'])
+
+    data = tokenize_col(df, ["description"], nlp, remove_stop=True)
+    first_last_token(data)
+
+    unique_tokens = data.description_t.explode().unique()
+    
+    model = Word2Vec.load("data/description_embedding.model")
+    embeddings = model.wv[data.description_t[0]]
+    mean_embedding = np.nanmean(embeddings, axis=0)
+    return mean_embedding
 
 if __name__ == "__main__":
     print("Merging train and test data...")
@@ -170,3 +185,5 @@ if __name__ == "__main__":
         "data/train_data.txt", "data/test_data_solution.txt", "data/full_data.txt"
     )
     main("data/full_data.txt")
+
+    print(inference_pipeline("I love you baby"))
