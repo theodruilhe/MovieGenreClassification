@@ -57,18 +57,7 @@ def visualize_clusters(df):
 
 
 
-def cluster_analysis(df):
-
-    pca_df = add_pca_features(df)
-
-    pca_mat = pca_df.drop(columns=["genre"])
-
-
-    kmeans = KMeans(
-    n_clusters=8, init="random", max_iter=300, n_init=10, random_state=29
-    )
-    kmeans.fit(pca_mat)
-    pca_df["cluster"] = kmeans.labels_
+def cluster_analysis(pca_df):
 
     genre_cluster_distribution = pca_df.groupby(['cluster', 'genre']).size().reset_index(name='count')
     
@@ -106,5 +95,5 @@ if __name__ == "__main__":
 
     visualize_clusters(full_df)
 
-    cluster_analysis(filtered_df)
+    cluster_analysis(full_df)
 
