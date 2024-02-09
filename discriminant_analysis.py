@@ -38,7 +38,7 @@ def plot_lda(pca_df, lda):
     X = pca_df.drop("genre", axis=1)
     y = pca_df["genre"]
 
-    lda = LinearDiscriminantAnalysis(n_components=2)
+    lda = LinearDiscriminantAnalysis()
     X_r2 = lda.fit_transform(X, y)
 
     plt.figure(figsize=(8, 6))
