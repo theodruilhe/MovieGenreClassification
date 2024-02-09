@@ -79,7 +79,7 @@ def regroup_genres(data):
     data["genre"] = data["genre"].str.strip()
 
     data["genre"] = data["genre"].map(new_genres)
-    data = data[data["genre"] != "adult"]
+    data = data[data["genre"] != "short"]
 
     return data
 
