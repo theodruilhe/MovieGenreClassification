@@ -40,7 +40,7 @@ def train_all():
 
     pca_df, pca_param = add_pca_features(df, n_components=37)
 
-    lda_model = discriminant_analysis_pca(pca_df)
+    lda_model, _, _ = discriminant_analysis_pca(pca_df)
 
     return nlp, pca_param, lda_model
 
