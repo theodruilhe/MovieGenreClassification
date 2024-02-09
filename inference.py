@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 import spacy
@@ -52,7 +50,6 @@ def train_all():
 
 @st.cache_resource
 def load_models():
-    os.system("python3 -m spacy download en_core_web_sm")
     nlp, pca_param, lda_model, cart_model = train_all()
     w2v_model = Word2Vec.load("data/description_embedding.model")
     return nlp, pca_param, lda_model, cart_model, w2v_model
