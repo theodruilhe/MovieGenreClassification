@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from scipy.stats import norm
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import classification_report
@@ -11,7 +13,7 @@ from pca_embed import add_pca_features
 from utils import filter_data_genre
 
 
-def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
+def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42, heatmap=False):
     X_original = pca_df.drop("genre", axis=1)
     y = pca_df["genre"]
 
@@ -59,6 +61,15 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
     # Print classification report
     print("Report on PCA data:")
     print(classification_report(y_test, y_pred))
+    if heatmap:
+        report = classification_report(y_test, y_pred, output_dict=True)
+        report_df = pd.DataFrame(report).transpose()
+
+        # Heatmap visualization
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(report_df.iloc[:-1, :-1], annot=True, fmt=".2f", cmap="Blues")
+        plt.title("Classification Report Heatmap")
+        plt.show()
 
     return lda, full_transformed_data_train, full_transformed_data_test
 
@@ -103,5 +114,6 @@ if __name__ == "__main__":
     pca_df, _ = add_pca_features(df, n_components=37)
 
     # discriminant_analysis(filtered_df)
-    lda, train_da, test_da = discriminant_analysis_pca(pca_df)
+    lda, train_da, test_da = discriminant_analysis_pca(pca_df, heatmap=False)
+
     # plot_lda(pca_df, lda)
