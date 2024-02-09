@@ -5,6 +5,7 @@ import streamlit as st
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
+from cart import cart
 from data_pipeline import tokenize_col
 from discriminant_analysis import discriminant_analysis_pca
 from pca_embed import add_pca_features
@@ -13,7 +14,7 @@ from utils import filter_data_genre
 # nlp = spacy.load("en_core_web_sm")
 
 
-def inference_pipeline_da(text, nlp, pca_param, lda_model, w2v_model):
+def inference_pipeline_da(text, nlp, pca_param, pred_model, w2v_model):
     tqdm.pandas()
 
     data = [text]
@@ -29,7 +30,7 @@ def inference_pipeline_da(text, nlp, pca_param, lda_model, w2v_model):
     projected_embedding = pca_param.transform(mean_embedding.reshape(1, -1))
 
     # inference with LDA
-    prediction = lda_model.predict(projected_embedding)
+    prediction = pred_model.predict(projected_embedding)
 
     return mean_embedding, projected_embedding, prediction[0]
 
@@ -42,18 +43,20 @@ def train_all():
 
     lda_model, _, _ = discriminant_analysis_pca(pca_df)
 
-    return nlp, pca_param, lda_model
+    cart_model = cart(pca_df, plotting=False, random_state=29)
+
+    return nlp, pca_param, lda_model, cart_model
 
 
 @st.cache_resource
 def load_models():
-    nlp, pca_param, lda_model = train_all()
+    nlp, pca_param, lda_model, cart_model = train_all()
     w2v_model = Word2Vec.load("data/description_embedding.model")
-    return nlp, pca_param, lda_model, w2v_model
+    return nlp, pca_param, lda_model, cart_model, w2v_model
 
 
 if __name__ == "__main__":
-    nlp, pca_param, lda_model, w2v_model = load_models()
+    nlp, pca_param, lda_model, cart_model, w2v_model = load_models()
 
     st.title("Genre Classifier")
     st.write(
@@ -64,10 +67,18 @@ if __name__ == "__main__":
 
     output = st.empty()
 
-    if st.button("Classify"):
+    if st.button("Classify with LDA"):
         if text:
             mean_embedding, projected_embedding, prediction = inference_pipeline_da(
                 text, nlp, pca_param, lda_model, w2v_model
+            )
+            output.write(f"Predicted genre: {prediction}")
+        else:
+            output.write("Please enter a movie description")
+    if st.button("Classify with CART"):
+        if text:
+            mean_embedding, projected_embedding, prediction = inference_pipeline_da(
+                text, nlp, pca_param, cart_model, w2v_model
             )
             output.write(f"Predicted genre: {prediction}")
         else:

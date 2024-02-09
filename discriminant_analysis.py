@@ -1,18 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from scipy.stats import norm
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-import csv
 
 from pca_embed import add_pca_features
 from utils import filter_data_genre
 
 
-def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
+def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42, heatmap=False):
     X_original = pca_df.drop("genre", axis=1)
     y = pca_df["genre"]
 
@@ -20,6 +21,10 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(
         X_original, y, test_size=test_size, random_state=random_state
     )
+
+    # Reset indexes to align correctly after splitting
+    y_train = y_train.reset_index(drop=True)
+    y_test = y_test.reset_index(drop=True)
 
     # Initialize and train Linear Discriminant Analysis model
     lda = LinearDiscriminantAnalysis()
@@ -39,22 +44,32 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
     y_pred = lda.predict(X_test)
     y_pred_train = lda.predict(X_train)
 
+    # Concatenate transformed data with true and predicted genres, ensuring alignment
     full_transformed_data_train = pd.concat(
         [
             df_train_da,
-            pd.DataFrame(y_train),
-            pd.DataFrame(y_pred_train, columns=["pred"]),
+            y_train.reset_index(drop=True),
+            pd.Series(y_pred_train, name="pred"),
         ],
         axis=1,
     )
     full_transformed_data_test = pd.concat(
-        [df_test_da, pd.DataFrame(y_test), pd.DataFrame(y_pred, columns=["pred"])],
+        [df_test_da, y_test.reset_index(drop=True), pd.Series(y_pred, name="pred")],
         axis=1,
     )
 
     # Print classification report
     print("Report on PCA data:")
     print(classification_report(y_test, y_pred))
+    if heatmap:
+        report = classification_report(y_test, y_pred, output_dict=True)
+        report_df = pd.DataFrame(report).transpose()
+
+        # Heatmap visualization
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(report_df.iloc[:-1, :-1], annot=True, fmt=".2f", cmap="Blues")
+        plt.title("Classification Report Heatmap")
+        plt.show()
 
     return lda, full_transformed_data_train, full_transformed_data_test
 
@@ -97,20 +112,8 @@ if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
 
     pca_df, _ = add_pca_features(df, n_components=37)
-    X_original = pca_df.drop("genre", axis=1)
-    y = pca_df["genre"]
 
-    # Split data into train and test sets
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_original, y, test_size=0.2, random_state=42
-    )
+    # discriminant_analysis(filtered_df)
+    lda, train_da, test_da = discriminant_analysis_pca(pca_df, heatmap=False)
 
-    train_df = pd.concat([X_train, y_train], axis=1)
-    test_df = pd.concat([X_test, y_test], axis=1)
-
-    csv_train_path = "data/pca_df_train.csv"
-    csv_test_path = "data/pca_df_test.csv"
-
-    # Writing to CSV file
-    train_df.to_csv(csv_train_path, index=False)
-    test_df.to_csv(csv_test_path, index=False)
+    # plot_lda(pca_df, lda)
