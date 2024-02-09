@@ -20,18 +20,47 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42):
         X_original, y, test_size=test_size, random_state=random_state
     )
 
+    # Reset indexes to align correctly after splitting
+    y_train = y_train.reset_index(drop=True)
+    y_test = y_test.reset_index(drop=True)
+
     # Initialize and train Linear Discriminant Analysis model
     lda = LinearDiscriminantAnalysis()
     lda.fit(X_train, y_train)
 
+    transformed_data_train = lda.transform(X_train)
+    transformed_data_test = lda.transform(X_test)
+
+    df_train_da = pd.DataFrame(
+        transformed_data_train, columns=[f"da_{i}" for i in range(9)]
+    )
+    df_test_da = pd.DataFrame(
+        transformed_data_test, columns=[f"da_{i}" for i in range(9)]
+    )
+
     # Predict using the original feature space
     y_pred = lda.predict(X_test)
+    y_pred_train = lda.predict(X_train)
+
+    # Concatenate transformed data with true and predicted genres, ensuring alignment
+    full_transformed_data_train = pd.concat(
+        [
+            df_train_da,
+            y_train.reset_index(drop=True),
+            pd.Series(y_pred_train, name="pred"),
+        ],
+        axis=1,
+    )
+    full_transformed_data_test = pd.concat(
+        [df_test_da, y_test.reset_index(drop=True), pd.Series(y_pred, name="pred")],
+        axis=1,
+    )
 
     # Print classification report
     print("Report on PCA data:")
     print(classification_report(y_test, y_pred))
 
-    return lda, classification_report(y_test, y_pred)
+    return lda, full_transformed_data_train, full_transformed_data_test
 
 
 def plot_lda(pca_df, lda):
@@ -74,5 +103,5 @@ if __name__ == "__main__":
     pca_df, _ = add_pca_features(df, n_components=37)
 
     # discriminant_analysis(filtered_df)
-    lda, report_test = discriminant_analysis_pca(pca_df)
-    plot_lda(pca_df, lda)
+    lda, train_da, test_da = discriminant_analysis_pca(pca_df)
+    # plot_lda(pca_df, lda)
