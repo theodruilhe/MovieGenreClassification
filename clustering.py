@@ -4,19 +4,19 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 
 from pca_embed import add_pca_features
-from utils import filter_data_genre
+from utils import create_clustered_col, get_random_elements_from_cluster
 
 
-def elbow_method(data):
+def elbow_method(data, max_clusters=15):
     wcss = []
-    for i in tqdm(range(1, 11)):
+    for i in tqdm(range(1, max_clusters + 1)):
         kmeans = KMeans(
             n_clusters=i, init="random", max_iter=300, n_init=10, random_state=29
         )
         kmeans.fit(data)
         wcss.append(kmeans.inertia_)
-    plt.plot(range(1, 11), wcss)
-    plt.title("Elbow Method")
+    plt.plot(range(1, max_clusters + 1), wcss)
+    plt.title("K-Means Elbow Curve")
     plt.xlabel("Number of clusters")
     plt.ylabel("WCSS")
     plt.show()
@@ -49,14 +49,24 @@ def visualize_clusters(df):
             s=8,
             c=color,
         )
-    plt.legend()
+    plt.legend(title="Cluster")
+    plt.title("Clusters in the first two principal components")
     plt.show()
+
 
 def cluster_analysis(pca_df):
 
-    genre_cluster_distribution = pca_df.groupby(['cluster', 'genre']).size().reset_index(name='count')
-    
-    pivot_table = pd.pivot_table(genre_cluster_distribution, values='count', index='cluster', columns='genre', fill_value=0)
+    genre_cluster_distribution = (
+        pca_df.groupby(["cluster", "genre"]).size().reset_index(name="count")
+    )
+
+    pivot_table = pd.pivot_table(
+        genre_cluster_distribution,
+        values="count",
+        index="cluster",
+        columns="genre",
+        fill_value=0,
+    )
 
     percentage_table = pivot_table.div(pivot_table.sum(axis=1), axis=0) * 100
 
@@ -64,17 +74,25 @@ def cluster_analysis(pca_df):
 
     print(latex_output)
 
+    print(pca_df["cluster"].value_counts())
+
     fig, axes = plt.subplots(2, 4, figsize=(15, 8))
     fig.suptitle("Movie genre distribution in each cluster", fontsize=16)
-
 
     plt.subplots_adjust(wspace=0.5)
 
     for i, ax in enumerate(axes.flatten()):
 
-        cluster_data = genre_cluster_distribution[genre_cluster_distribution['cluster'] == i]
-        
-        ax.pie(cluster_data['count'], labels=cluster_data['genre'], autopct='%1.1f%%', startangle=90)
+        cluster_data = genre_cluster_distribution[
+            genre_cluster_distribution["cluster"] == i
+        ]
+
+        ax.pie(
+            cluster_data["count"],
+            labels=cluster_data["genre"],
+            autopct="%1.1f%%",
+            startangle=90,
+        )
         ax.set_title(f"Cluster {i}")
 
     plt.show()
@@ -87,6 +105,26 @@ if __name__ == "__main__":
 
     full_df = create_clustered_df(pca_df, n_clusters=8)
 
-    visualize_clusters(full_df)
+    # elbow_method(pca_df.drop(columns=["genre"]))
 
-    cluster_analysis(full_df)
+    # visualize_clusters(full_df)
+
+    # cluster_analysis(full_df)
+    cluster_column = create_clustered_col(full_df, df)
+    n_sample = 5
+    desc = get_random_elements_from_cluster(
+        cluster_column, 0, n_sample, random_state=29
+    )
+
+    for i in range(n_sample):
+        print("Title:", desc.iloc[i]["title"])
+        print("Description:", desc.iloc[i]["description"])
+        print("Genre:", desc.iloc[i]["genre"])
+        print("\n")
+
+    # desc to latex table
+    print(
+        desc[["title", "genre", "description"]].to_latex(
+            index=False, caption="Random elements from cluster 0"
+        )
+    )
