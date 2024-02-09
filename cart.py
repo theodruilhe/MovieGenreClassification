@@ -28,10 +28,10 @@ def cart(pca_df, ploting=False):
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
 
-    # Visualizing the Decision Tree
-    plt.figure(figsize=(20,10))
-    plot_tree(classifier, filled=True, feature_names=X.columns, class_names=classifier.classes_)
     if ploting==True:
+        # Visualizing the Decision Tree
+        plt.figure(figsize=(20,10))
+        plot_tree(classifier, filled=True, feature_names=X.columns, class_names=classifier.classes_)
         plt.show()
     return(classifier)
 
