@@ -59,6 +59,8 @@ def plot_pca(df):
         "y",
         "k",
         "orange",
+        "purple",
+        "brown",
     ]
     for target, color in zip(targets, colors):
         indicesToKeep = df["genre"] == target
