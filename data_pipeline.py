@@ -22,7 +22,7 @@ def load_data(text_file):
     Load data from text file
     """
     data = []
-    with open(text_file, "r") as f:
+    with open(text_file, "r", encoding="utf8") as f:
         for line in f:
             line = line.strip().split(":::")
             data.append(line)
@@ -37,7 +37,7 @@ def merge_train_test(train_data_file, test_data_file, open_file):
     train_data = load_data(train_data_file)
     test_data = load_data(test_data_file)
     merged = pd.concat([train_data, test_data], axis=0)
-    with open(open_file, "w") as f:
+    with open(open_file, "w", encoding="utf8") as f:
         for i, row in tqdm(merged.iterrows()):
             f.write(":::".join(row) + "\n")
 
