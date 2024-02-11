@@ -10,8 +10,6 @@ distinct groupings within the movies, including a unique cluster characterized b
 singular movie descriptions. The project leverages a Classification Tree and Linear
 Discriminant Analysis (LDA), achieving an accuracy of 60% with LDA in genre prediction.
 
-![clustering plot on two principal components](./cluster_plot.png)
-
 ## Installation
 
 After cloning this repo, run `pip install -r requirements.txt`
