@@ -1,6 +1,16 @@
 # Movie Genre Classification
 
-Academic project on Movie Genre Classification
+![AI generatad banner](./banner.png)
+
+This project harnesses machine learning and natural language processing to
+categorize movies into genres based on their IMDb descriptions. Employing a
+robust dataset, the study undertakes tokenization and embedding for preprocessing,
+followed by PCA for dimensionality reduction. With K-Means clustering, we uncover
+distinct groupings within the movies, including a unique cluster characterized by
+singular movie descriptions. The project leverages a Classification Tree and Linear
+Discriminant Analysis (LDA), achieving an accuracy of 60% with LDA in genre prediction.
+
+![clustering plot on two principal components](./cluster_plot.png)
 
 ## Installation
 
