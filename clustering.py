@@ -98,6 +98,16 @@ def cluster_analysis(pca_df):
     plt.show()
 
 
+def show_sample_from_cluster(cluster_column, cluster, n_sample=5):
+    desc = get_random_elements_from_cluster(cluster_column, cluster, n_sample)
+    for i in range(n_sample):
+        print("Title:", desc.iloc[i]["title"])
+        print("Description:", desc.iloc[i]["description"])
+        print("Genre:", desc.iloc[i]["genre"])
+        print("\n")
+    return desc
+
+
 if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
 
@@ -111,16 +121,9 @@ if __name__ == "__main__":
 
     # cluster_analysis(full_df)
     cluster_column = create_clustered_col(full_df, df)
-    n_sample = 5
-    desc = get_random_elements_from_cluster(
-        cluster_column, 0, n_sample, random_state=29
-    )
-
-    for i in range(n_sample):
-        print("Title:", desc.iloc[i]["title"])
-        print("Description:", desc.iloc[i]["description"])
-        print("Genre:", desc.iloc[i]["genre"])
-        print("\n")
+    n_sample = 10
+    cluster = 0
+    desc = show_sample_from_cluster(cluster_column, cluster, n_sample)
 
     # desc to latex table
     print(
