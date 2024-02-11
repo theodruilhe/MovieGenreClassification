@@ -27,17 +27,17 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42, heatmap=Fa
     y_test = y_test.reset_index(drop=True)
 
     # Initialize and train Linear Discriminant Analysis model
-    lda = LinearDiscriminantAnalysis()
+    lda = LinearDiscriminantAnalysis(n_components=4)
     lda.fit(X_train, y_train)
 
     transformed_data_train = lda.transform(X_train)
     transformed_data_test = lda.transform(X_test)
 
     df_train_da = pd.DataFrame(
-        transformed_data_train, columns=[f"da_{i}" for i in range(9)]
+        transformed_data_train, columns=[f"da_{i}" for i in range(4)]
     )
     df_test_da = pd.DataFrame(
-        transformed_data_test, columns=[f"da_{i}" for i in range(9)]
+        transformed_data_test, columns=[f"da_{i}" for i in range(4)]
     )
 
     # Predict using the original feature space
@@ -108,6 +108,12 @@ def plot_lda(pca_df, lda):
     plt.show()
 
 
+def show_explained_variance(lda):
+    for i, explained_variance in enumerate(lda.explained_variance_ratio_):
+        print(f"Explained variance of DA_{i}: {explained_variance:.3f}")
+    print(f"Total explained variance: {lda.explained_variance_ratio_.sum():.3f}")
+
+
 if __name__ == "__main__":
     df = pd.read_csv("data/full_data_embed.csv")
 
@@ -115,5 +121,4 @@ if __name__ == "__main__":
 
     # discriminant_analysis(filtered_df)
     lda, train_da, test_da = discriminant_analysis_pca(pca_df, heatmap=False)
-
-    # plot_lda(pca_df, lda)
+    show_explained_variance(lda)
