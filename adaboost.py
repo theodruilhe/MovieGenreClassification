@@ -1,11 +1,10 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import accuracy_score
 from pca_embed import add_pca_features
 
-def randomforest(pca_df, random_state=25):
-
+def adaboost(pca_df, random_state=25):
     X_original = pca_df.drop("genre", axis=1)
     y = pca_df["genre"]
 
@@ -16,7 +15,7 @@ def randomforest(pca_df, random_state=25):
     # Reset indexes to align correctly after splitting
     y_train = y_train.reset_index(drop=True)
     y_test = y_test.reset_index(drop=True)
-    model = RandomForestClassifier(n_estimators=200, max_depth=20, random_state=random_state)
+    model = AdaBoostClassifier(n_estimators=500, learning_rate=0.2, random_state=random_state)
     
     model.fit(X_train, y_train)     
     
@@ -32,7 +31,7 @@ if __name__ == "__main__":
     pca_df, _ = add_pca_features(df, 37)
 
 
-    model = randomforest(pca_df,  random_state=25)
+    model = adaboost(pca_df,  random_state=25)
 
-    print('Accuracy: {model}')
+    print(f'Accuracy: {model}')
     
