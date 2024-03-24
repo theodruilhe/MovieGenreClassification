@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
 from pca_embed import add_pca_features
@@ -23,6 +23,7 @@ def randomforest(pca_df, random_state=25, n_estimators=200, max_depth=20):
         max_depth=max_depth,
         random_state=random_state,
         max_features="sqrt",
+        verbose=1,
     )
 
     model.fit(X_train, y_train)
@@ -31,6 +32,7 @@ def randomforest(pca_df, random_state=25, n_estimators=200, max_depth=20):
     y_true = y_test
 
     accuracy = accuracy_score(y_true, y_pred)
+    print(classification_report(y_true, y_pred))
 
     return model, accuracy
 

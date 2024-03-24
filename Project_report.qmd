@@ -1,0 +1,323 @@
+---
+title: High Dimensional Data Analysis and Machine Learning
+subtitle: Project Part 2
+date: 2024-03-24
+author: Théo Druilhe, Pierre Larose, Sigurd Saue, Killian Steunou
+date-format: long
+warning: false
+format:
+  html:
+    code-tools:
+      source: true
+    toc: true
+  pdf:
+    title: |
+      Project Part 2 -- High Dimensional Data Analysis and Machine Learning
+---
+
+# Abstract
+
+This project's aim is to use the methods of bootstraping, bagging, random forest and adaboost on a text dataset. Our peculiarity is the usage of natural language processing methods to create a tokenized and vectorized dataset of movies descriptions. We obtained an accuracy of 60% with the random forest method for predicting the genre of a movie based on text input (vectorized).
+
+-------------------------------------------------------------------------------
+
+Note that we wrote the majority of the project in Python, and since our code can be quite heavy sometimes, we do not include it directly in this report. However, we provide a link to the [GitHub repository](https://github.com/theodruilhe/MovieGenreClassification) where you can find all the python code.
+
+# Introduction
+
+In this project, we want to show that we can apply the methods learned in the high-dimensional data analysis and machine learning course to deal with textual data. Our aim is to create a machine learning model able to predict the genre of a film based on its textual description. The data we use comes from IMDb (Internet Movie Database). The initial data consists solely of text, so we need to carry out appropriate processing to transform this data into tabular (and numerical) data.
+
+After pre-processing, we will implement a PCA to reduce the dimensionality of our dataset. Next, we will apply the methods of bootstraping (doesn't serve any purpose but there is no good application of bootstrap on our peculiar data possible), bagging of linear discriminant analysis models, random forest and adaboost to predict the genre of a movie based on its description.
+
+# Data sources and preprocessing
+
+## Data Source
+
+Our dataset, originating from IMDb, contains a total of 108,414 records, each representing a distinct film or show, and the following information: title (the title of the movie), description (a short description of the movie) and genre (the genre of the movie, for example documentary, adventure, etc).\\ There are 27 different genres, which distribution is shown in the following table:
+
+| **Genre**   | **Count** |
+|-------------|-----------|
+| Drama       | 27225     |
+| Documentary | 26192     |
+| Comedy      | 14893     |
+| Short       | 10145     |
+| Horror      | 4408      |
+| Thriller    | 3181      |
+| Action      | 2629      |
+| Western     | 2064      |
+| Reality-TV  | 1767      |
+| Family      | 1567      |
+| Adventure   | 1550      |
+| Music       | 1462      |
+| Romance     | 1344      |
+| Sci-Fi      | 1293      |
+| Adult       | 1180      |
+| Crime       | 1010      |
+| Animation   | 996       |
+| Sport       | 863       |
+| Talk-Show   | 782       |
+| Fantasy     | 645       |
+| Mystery     | 637       |
+| Musical     | 553       |
+| Biography   | 529       |
+| History     | 486       |
+| Game-Show   | 387       |
+| News        | 362       |
+| War         | 264       |
+
+We can see the initial distribution is very unequal, with some genres being overrepresented. To overcome this, we regrouped the genres in the following way: genres with similar themes or audience appeal were combined into broader categories to achieve a more balanced representation and to simplify the analysis. For instance, "Thriller" and "Horror" were merged into "Thriller/Horror" to encapsulate the full spectrum of suspenseful and scary content. Similarly, genres that often share elements, such as "Action," "Adventure," "War," "Sci-Fi," and "Western," were all consolidated under "Action" to represent dynamic content. The "Drama" and "Romance" genres were kept within "Drama," reflecting their focus on emotional narratives and character development. "Family" and "Animation" were grouped together to cater to content that is generally family-friendly, while "Music" and "Musical" were combined to cover all music-related content. The documentary field, including "Documentary," "Biography," and "History," was unified under "Documentary" to encompass all non-fiction and educational content. Live entertainment and informative content, such as "Game-Show," "Sport," "Reality-TV," "News," and "Talk-Show," were grouped into "Live," highlighting their real-time or reality-based aspects. "Mystery," "Fantasy," and "Crime" were categorized as "Police" to focus on genres typically involving investigation or fantastical elements. Lastly, "Comedy" and "Short" remained in their own distinct categories due to their unique characteristics that do not neatly fit with others.
+
+We also removed the genre "Adult" from the data to avoid having sensitive content.
+
+After this regrouping step, we obtain the distribution shown in the following table:
+
+| **Genre**       | **Count** |
+|-----------------|-----------|
+| Drama           | 28569     |
+| Documentary     | 27207     |
+| Comedy          | 14893     |
+| Short           | 10145     |
+| Action          | 7800      |
+| Thriller/Horror | 7589      |
+| Live            | 4161      |
+| Family          | 2563      |
+| Police          | 2292      |
+| Music           | 2015      |
+
+## Data Preprocessing
+
+In this study, we outline our methodological approach for preparing and transforming raw textual data into a numerical form suitable for machine learning tasks. Specifically, given the initial dataset, we executed several sequential transformation steps described below.
+
+## Tokenization
+
+Initially, natural language processing techniques were applied to convert unstructured text entries into structured numerical representations via tokenization and removal of frequently occurring stop words. We utilized the SpaCy NLP library to achieve this goal. Further preprocessing included eliminating unnecessary white spaces and special characters while also converting all characters into their lowercase equivalents. These procedures were implemented across the entirety of the movie descriptions. After this step, we can look at the words distribution among the tokenized entries. The following tables show the extreme quantiles. In the figure below, we can see the most present words are the one we expect to find in a movie description, such as 'life', 'story', 'film', etc.
+
+![Top word distribution](./top10_words.png){#fig:word_distrib}
+
+In the figure below we can see the least represented words are not very often used words, or not commun proper nouns.
+
+![Bottom word distribution](./last10_words.png){#fig:word_distrib2}
+
+## Vectorization
+
+Subsequently, we constructed dense vector representations for each distinct term existing in the processed corpora through application of the Word2Vec algorithm. By averaging these term-specific embeddings per record, we obtained comprehensive sentence-level embeddings that captured intricate relationships between terms embedded therein. Afterwards, said embeddings were concatenated to the original dataset constituting additional variables.
+
+## Dimensionality Reduction: Principal Component Analysis (PCA)
+
+After the data is preprocessed, each observation has now 100 new numerical variables, one for each embedding dimension. We perform a Principal Component Analysis to try to reduce the dimension of the data to obtain our final dataset. We will use the first 37 principal components as our final dataset.
+
+The first two principal components are shown in the figure below. 
+
+![PCA](./pca_2D.png){#fig:pca}
+
+# Methods
+
+## Bootstrap
+
+We will use the bootstrap method to estimate the mean of the embeddings (on the whole embeddings dataset, not the one reduced with pca) of the descriptions. The bootstrap method is a resampling technique that allows us to estimate the sampling distribution of a statistic by resampling with replacement from the original sample. This method is particularly useful when the sample size is small. We could use it to help with our imbalance data problem, but it makes little sense to use it in this case since we are not trying to estimate a population parameter.
+
+```{r bootstrap, echo=FALSE}
+library(readr)
+full_data_embed <- read_csv("data/full_data_embed.csv")
+```
+
+First we compute a statistic on the data (the mean of all embeded descriptions)
+
+```{r bootstrap2, echo=TRUE}
+embed <- full_data_embed[,-1:-7]
+means <- as.data.frame(
+  summary(embed)
+  )$Freq[seq(from = 10, to = length(
+    as.data.frame(
+      summary(embed)
+      )$Freq
+    ), by = 6)]
+subS <- function(a_string){
+  as.numeric(substr(a_string, 9, 18))
+}
+mean_of_embeded_vectors <- lapply(means, subS)
+```
+
+Then we define a function to compute this same statistics on bootstrap samples
+
+```{r bootstrap3, echo=TRUE}
+mean_of_a_bootstrap <- function(){
+  indices <- sample(1:nrow(embed), nrow(embed), replace=TRUE)
+  embed_b <- embed[indices,]
+  means <- as.data.frame(
+    summary(embed_b)
+    )$Freq[seq(from = 10, to = length(
+      as.data.frame(
+        summary(embed_b)
+        )$Freq
+      ), by = 6)]
+  subS <- function(a_string){
+    as.numeric(substr(a_string, 9, 18))
+  }
+  mean_of_embeded_vectors <- lapply(means, subS)
+  num <- function(numb){
+    as.numeric(numb)
+  }
+  return(lapply(mean_of_embeded_vectors, num))
+}
+```
+
+We use the function to compute the statistics for B bootstrap samples
+
+```{r bootstrap4, echo=TRUE}
+nested_list <- list()
+for(i in 1:10) {
+  iname <- paste("mean_of_boot",i,sep="")
+  x <- mean_of_a_bootstrap()
+  nested_list[[iname]] <- x
+}
+data_frame <- as.data.frame(do.call(cbind, nested_list))
+df <- as.data.frame(sapply(data_frame, as.numeric))
+```
+
+Finally we can compute a variance covariance matrix of our statistics of interest. This doesn't serve any purpose but there is no good application of bootstrap on our peculiar data possible anyway.
+
+```{r bootstrap5, echo=TRUE}
+cov_of_mean <- cov(df)
+cov_of_mean
+```
+
+## Bagging
+Bagging, which stands for Bootstrap Aggregating, is an ensemble learning method that aims to improve the stability and accuracy of machine learning models. It involves training multiple instances of the same learning algorithm on different bootstrapped subsets of the training data. Bagging helps to reduce overfitting and variance. By training multiple models on different subsets of the data and combining their predictions, bagging can improve the generalization performance of a model, especially when the base learning algorithm is sensitive to the training data.
+
+Linear Discriminant Analysis is a dimensionality reduction and classification technique commonly used for supervised learning problems. LDA seeks to find a linear combination of features that best separates different classes in the data by maximizing 
+the separability between different classes.
+
+In the first part of this project our LDA model was the best one in term of accuracy. Indeed, we achieved an accuracy of 60%. In order to improve this result we will now try to apply bagging method to LDA.  In fact, the drawback of our data is the presence of imbalanced classes, as we have some genres with a lot of observations (drama, documentary) and others not (police, music). 
+
+Applying bagging to LDA is relevant because it leverages the benefits of both techniques. Bagging helps reduce overfitting and improves the stability of the LDA classifier. Additionally, by combining the predictions of multiple LDA models, we can obtain more robust and accurate predictions, especially in our situation the classes are imbalanced.
+
+**Methodology:**
+
+1. **Train/Test split** We start by splitting our data into a train and a test set (80% and 20% respectively)
+2. **Bootstrap Sampling**: We generate $n$ multiple bootstrap samples from the training data. Bootstrap sampling involves randomly sampling data points from the training set with replacement, resulting in multiple subsets of the data.
+3. **Training LDA Models**: For each bootstrap sample, we train a separate LDA model. Each LDA model learns to discriminate between classes using a different subset of the training data.    
+4. **Aggregating Predictions**: Once all LDA models are trained, we obtain predictions for the test data from each model. These predictions are aggregated to make a final prediction using techniques such as majority voting.
+5. **Final Prediction**: The final prediction is obtained by combining the predictions from all LDA models and by selecting the class that receives the most votes (*i.e.*, the mode of the predictions).
+
+**Results:**
+- We use 100 differents LDA Model to proceed. Indeed, this number is consistent with the hyperparameters we choose in Random Forest. Moreover, using a larger number did not increase our accuracy.
+- We obtained an accuracy of 59.66%. Unfortunately, this is slightly worse as the one we had for the unique LDA model (59.82%).
+
+Here are the full results: 
+
+| Class           | Precision | Recall | F1-Score | Support |
+|-----------------|-----------|--------|----------|---------|
+| action          | 0.56      | 0.54   | 0.55     | 1521    |
+| comedy          | 0.54      | 0.48   | 0.51     | 2954    |
+| documentary     | 0.73      | 0.77   | 0.75     | 5574    |
+| drama           | 0.60      | 0.70   | 0.65     | 5714    |
+| family          | 0.38      | 0.25   | 0.30     | 509     |
+| live            | 0.45      | 0.53   | 0.48     | 794     |
+| music           | 0.36      | 0.59   | 0.45     | 397     |
+| police          | 0.25      | 0.12   | 0.16     | 465     |
+| short           | 0.49      | 0.29   | 0.37     | 2008    |
+| thriller/horror | 0.57      | 0.57   | 0.57     | 1511    |
+|                 |           |        |          |         |
+| accuracy        |           |        | 0.60     | 21447   |
+| macro avg       | 0.49      | 0.48   | 0.48     | 21447   |
+| weighted avg    | 0.59      | 0.60   | 0.59     | 21447   |
+
+that we can compare with a single discriminant analysis model with 4 components:
+
+| Class           | Precision | Recall | F1-Score | Support |
+|-----------------|-----------|--------|----------|---------|
+| action          | 0.57      | 0.54   | 0.55     | 1521    |
+| comedy          | 0.55      | 0.47   | 0.51     | 2954    |
+| documentary     | 0.73      | 0.77   | 0.75     | 5574    |
+| drama           | 0.60      | 0.71   | 0.65     | 5714    |
+| family          | 0.39      | 0.25   | 0.30     | 509     |
+| live            | 0.43      | 0.52   | 0.47     | 794     |
+| music           | 0.36      | 0.59   | 0.45     | 397     |
+| police          | 0.26      | 0.12   | 0.16     | 465     |
+| short           | 0.49      | 0.30   | 0.37     | 2008    |
+| thriller/horror | 0.56      | 0.57   | 0.57     | 1511    |
+|                 |           |        |          |         |
+| accuracy        |           |        | 0.60     | 21447   |
+| macro avg       | 0.49      | 0.48   | 0.48     | 21447   |
+| weighted avg    | 0.59      | 0.60   | 0.59     | 21447   |
+
+As an illustration, we can plot the first two components of the LDA model:
+
+![LDA](./da_2D.png)
+
+**Conclusion:**
+In summary, the lack of improvement in accuracy when applying bagging to LDA may be attributed to limited model diversity or the characteristics of the dataset. Bagging relies on diverse base learners to provide robust predictions. If the base LDA models trained on different bootstrap samples are too similar to each other, the aggregated predictions may not offer much improvement over a single LDA model. 
+Bagging does not solve our main problem, which is imbalanced class.
+
+
+
+## Random Forest
+
+In this part, we use the Random Forest algorithm to classify the movie genres. We will use the first 37 principal components as our final dataset. We train the model with the training set (80% of our data) and evaluate it with the test set (20% of the data). We will use the accuracy as the metric to evaluate the model. You can see the code at this [link](https://github.com/theodruilhe/MovieGenreClassification/blob/main/random_forest.py).
+
+We used 100 trees in the forest and a maximum depth of 20 for each tree. We also used the Gini impurity as the criterion to split the nodes and a maximum number of features equal to the square root of the number of features in the dataset (*i.e.* $\approx$ 6). With these parameters, we obtained an accuracy of 59.85%. 
+This is an improvement from using a single tree, which gave an accuracy of 0.43 with the same parameters (although we obtained at the maximum 0.53 with a smaller maximum depth). The full results are described in the table below:
+
+| Class           | Precision | Recall | F1-Score | Support |
+|-----------------|-----------|--------|----------|---------|
+| action          | 0.62      | 0.52   | 0.57     | 1521    |
+| comedy          | 0.53      | 0.46   | 0.49     | 2954    |
+| documentary     | 0.66      | 0.86   | 0.75     | 5574    |
+| drama           | 0.55      | 0.77   | 0.64     | 5714    |
+| family          | 0.67      | 0.08   | 0.14     | 509     |
+| live            | 0.59      | 0.34   | 0.43     | 794     |
+| music           | 0.72      | 0.32   | 0.44     | 397     |
+| police          | 1.00      | 0.01   | 0.02     | 465     |
+| short           | 0.62      | 0.17   | 0.27     | 2008    |
+| thriller/horror | 0.62      | 0.48   | 0.54     | 1511    |
+|                 |           |        |          |         |    
+| accuracy        |           |        | 0.60     | 21447   |
+| macro avg       | 0.66      | 0.40   | 0.43     | 21447   |
+| weighted avg    | 0.61      | 0.60   | 0.56     | 21447   |
+
+
+## AdaBoost
+
+AdaBoost, which stands for Adaptive Boosting, is a powerful ensemble learning algorithm used to improve the accuracy of classification models. It works by combining multiple weak classifiers into a single strong classifier. Here’s a concise breakdown of its mechanism:
+
+1. Initially, all observations in the dataset are assigned equal weights. This ensures that the first weak classifier treats each instance with equal importance.
+2. AdaBoost learns iteratively. In each iteration, it focuses on the observations that were previously misclassified by increasing their weights. This adaptive process ensures that subsequent classifiers pay more attention to these difficult cases.
+3. Each weak classifier is assigned a weight based on its accuracy, with more accurate classifiers receiving higher weights. This weighting is crucial because it influences how much say each classifier has in the final decision.
+4. The final model is a weighted combination of all the weak classifiers. The weight of each classifier in this combination is proportional to its accuracy, allowing the ensemble to leverage the strengths of each individual classifier.
+5. For classification problems, the output is typically determined through a weighted vote, where each classifier's vote is weighted by its accuracy. This process ensures that the most accurate classifiers have the most influence on the final decision.
+
+AdaBoost is favored for its simplicity and effectiveness, especially in scenarios where the base classifiers are too weak or simple on their own. However, it can be sensitive to noisy data and outliers, as the adaptive process may overemphasize the harder-to-classify instances, potentially leading to overfitting.
+
+In this project we used the AdaBoost algorithm with decision trees as the base estimator to see if it will perform better. As we have imbalanced classes in our dataset, we had great expectations for this algorithm.
+We trained the model with the training set (80% of our data) and evaluated it with the test set (20% of the data). We used the accuracy as the metric to evaluate the model.
+We set the number of estimators to 100, a maximum depth of 20 for each tree and the learning rate to 0.2. With these parameters, we obtained an accuracy of 58.25%, which is lower to the Random Forest model's results. We tried to tune the hyperparameters to see if we could improve the accuracy of the model, but since each training takes about 15 min for these parameters and increasing to 500 estimators improved by only 0.11 percentage points, we decided to keep this setting. The full results are described in the table below:
+   
+
+| Class           | Precision | Recall | F1-Score | Support |
+|-----------------|-----------|--------|----------|---------|
+| action          | 0.66      | 0.47   | 0.55     | 1521    |
+| comedy          | 0.54      | 0.41   | 0.47     | 2954    |
+| documentary     | 0.63      | 0.86   | 0.73     | 5574    |
+| drama           | 0.52      | 0.79   | 0.63     | 5714    |
+| family          | 0.68      | 0.04   | 0.07     | 509     |
+| live            | 0.63      | 0.27   | 0.37     | 794     |
+| music           | 0.75      | 0.26   | 0.39     | 397     |
+| police          | 1.00      | 0.01   | 0.02     | 465     |
+| short           | 0.66      | 0.13   | 0.22     | 2008    |
+| thriller/horror | 0.65      | 0.41   | 0.51     | 1511    |
+|                 |           |        |          |         |
+| accuracy        |           |        | 0.58     | 21447   |
+| macro avg       | 0.67      | 0.37   | 0.40     | 21447   |
+| weighted avg    | 0.61      | 0.58   | 0.54     | 21447   |
+
+We can notice that the accuracy among classes is quite different than the Random Forest model. The AdaBoost model performed worse in the `documentary` and `drama` classes, and better in the smaller classes (for example music where it has a precision of 0.75).
+
+You can see the full code at this [link](https://github.com/theodruilhe/MovieGenreClassification/blob/main/bagging_lda.py).
+
+# Conclusion
+
+In this project, we explored the use of ensemble learning techniques to improve the classification of movie genres based on their plot summaries. We experimented with bagging, random forests, and AdaBoost algorithms to enhance the performance of linear discriminant analysis (LDA) and decision trees. Our results showed that bagging did not significantly improve the accuracy of LDA, while random forests and AdaBoost achieved similar accuracy levels of around 59-60%. Despite the modest improvements, these ensemble methods demonstrated the potential to enhance classification performance by leveraging multiple base learners. Future work could explore more advanced ensemble techniques, such as gradient boosting or stacking, to further enhance the accuracy of genre classification models. Additionally, addressing the imbalanced class distribution in the dataset could lead to more robust and reliable predictions. Overall, ensemble learning seems a bit overkill for this specific problem, as the accuracy is not that high, but it is a good exercise to understand how these algorithms work and how they can be applied to real-world datasets.
+
+
+
