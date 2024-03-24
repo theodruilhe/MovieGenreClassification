@@ -191,3 +191,69 @@ show_explained_variance(lda)
 # Plot transformed data
 plot_lda(pca_df, lda)
 ```
+
+### Bagging of LDAs
+
+1. Run a bagging of LDA on the data and output the classification results for all
+the models as a dataframe (`bagging_discriminant_analysis()`)
+2. Run `ealuate_predictions()` to get a classification report.
+
+#### Example Usage
+
+```python
+# Load data and perform PCA
+df = pd.read_csv("data/full_data_embed.csv")
+pca_df, _ = add_pca_features(df, n_components=37)
+
+# Perform bagging on LDA with PCA
+test_preds = bagging_discriminant_analysis(
+pca_df, n_estimators=100, test_size=0.2, random_state=42
+)
+
+# Extract true genre labels and majority vote predictions
+y_true = test_preds["genre"]
+y_pred = test_preds["pred_maj_vote"]
+
+# Evaluate predictions
+evaluate_predictions(y_true, y_pred)
+```
+
+### Random Forest
+
+1. Run a random forest algorithm and output the model and its accuracy on a test set.
+
+#### Example Usage
+
+```python
+df = pd.read_csv("data/full_data_embed.csv")
+
+pca_df, _ = add_pca_features(df, 37)
+
+model, accuracy = randomforest(
+pca_df, n_estimators=100, max_depth=20, random_state=42
+)
+
+print(f"Accuracy: {accuracy*100:.2f}%")
+```
+
+### AdaBoost
+
+1. Run the AdaBoost algoritm and output the model and accuracy.
+
+#### Example Usage
+
+```python
+df = pd.read_csv("data/full_data_embed.csv")
+
+pca_df, _ = add_pca_features(df, 37)
+
+model, accuracy = adaboost(
+pca_df,
+random_state=42,
+lr=0.2,
+n_estimators=100,
+estimator=DecisionTreeClassifier(max_depth=20, random_state=42),
+)
+
+print(f"Accuracy: {accuracy*100:.2f}%")
+```
