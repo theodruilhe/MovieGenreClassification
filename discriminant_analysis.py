@@ -5,7 +5,7 @@ import seaborn as sns
 from scipy.stats import norm
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -61,6 +61,7 @@ def discriminant_analysis_pca(pca_df, test_size=0.2, random_state=42, heatmap=Fa
     # Print classification report
     print("Report on PCA data:")
     print(classification_report(y_test, y_pred))
+    print(f"Accuracy: {accuracy_score(y_test, y_pred)}")
     if heatmap:
         report = classification_report(y_test, y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
