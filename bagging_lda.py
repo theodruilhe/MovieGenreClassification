@@ -11,7 +11,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import resample
 
 from pca_embed import add_pca_features
-from utils import filter_data_genre
 from tqdm import tqdm 
 
 def bagging_discriminant_analysis(pca_df, n_estimators=10, test_size=0.2, random_state=42):
@@ -23,9 +22,6 @@ def bagging_discriminant_analysis(pca_df, n_estimators=10, test_size=0.2, random
 
     test_preds = []
 
-    # Initialize and train Linear Discriminant Analysis model
-    lda = LinearDiscriminantAnalysis(n_components=4)
-    
     # Utilisez tqdm pour créer une barre de progression
     for _ in tqdm(range(n_estimators), desc="Bagging progress"):
         # Generate a bootstrap sample
@@ -34,6 +30,8 @@ def bagging_discriminant_analysis(pca_df, n_estimators=10, test_size=0.2, random
         X_train = bootstrap_sample.drop("genre", axis=1)
         y_train = bootstrap_sample["genre"]
 
+        # Initialize and train Linear Discriminant Analysis model
+        lda = LinearDiscriminantAnalysis(n_components=4)
         lda.fit(X_train, y_train)
 
         # Predictions on the test set
@@ -51,7 +49,7 @@ def bagging_discriminant_analysis(pca_df, n_estimators=10, test_size=0.2, random
     # Rename the second column
     full_transformed_data_test.columns = ['genre', 'pred_maj_vote'] + [f'pred_da_{i}' for i in range(1, n_estimators+1)]
     
-    print(full_transformed_data_test.head(30))
+    print(full_transformed_data_test.head(10))
     
     return full_transformed_data_test
 
@@ -71,7 +69,7 @@ if __name__ == "__main__":
     pca_df, _ = add_pca_features(df, n_components=37)
 
     # Perform bagging on LDA with PCA
-    test_preds = bagging_discriminant_analysis(pca_df, n_estimators=300, test_size=0.2, random_state=42)
+    test_preds = bagging_discriminant_analysis(pca_df, n_estimators=100, test_size=0.2, random_state=42)
 
     # Extract true genre labels and majority vote predictions
     y_true = test_preds['genre']
@@ -79,4 +77,3 @@ if __name__ == "__main__":
     
     # Evaluate predictions
     evaluate_predictions(y_true, y_pred)
-    
