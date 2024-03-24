@@ -183,6 +183,7 @@ cov_of_mean
 ```
 
 ## Bagging
+
 Bagging, which stands for Bootstrap Aggregating, is an ensemble learning method that aims to improve the stability and accuracy of machine learning models. It involves training multiple instances of the same learning algorithm on different bootstrapped subsets of the training data. Bagging helps to reduce overfitting and variance. By training multiple models on different subsets of the data and combining their predictions, bagging can improve the generalization performance of a model, especially when the base learning algorithm is sensitive to the training data.
 
 Linear Discriminant Analysis is a dimensionality reduction and classification technique commonly used for supervised learning problems. LDA seeks to find a linear combination of features that best separates different classes in the data by maximizing 
@@ -250,7 +251,7 @@ As an illustration, we can plot the first two components of the LDA model:
 In summary, the lack of improvement in accuracy when applying bagging to LDA may be attributed to limited model diversity or the characteristics of the dataset. Bagging relies on diverse base learners to provide robust predictions. If the base LDA models trained on different bootstrap samples are too similar to each other, the aggregated predictions may not offer much improvement over a single LDA model. 
 Bagging does not solve our main problem, which is imbalanced class.
 
-
+You can see the code at this [link](https://github.com/theodruilhe/MovieGenreClassification/blob/main/bagging_lda.py).
 
 ## Random Forest
 
